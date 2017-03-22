@@ -14,7 +14,7 @@ Ein Danke möchte ich glassart sagen, der mich immer kräftig beim Testen unters
 
 Sieht kompliziert aus, ist es aber gar nicht ....
 
-IMiniBrauerei gem. Schaltplan.jpg verdrahten
+IMiniBrauerei gem. Schaltplan.jpg verdrahten ( in der Configuration können Später die Schaltzustnde der Ausgänge auch invertiert werden )
 ![Schaltplan](Schaltplan.jpg)
 
 ## Installation:
