@@ -237,6 +237,94 @@ unsigned char ruehricon[] =
   0b00000001, 0b11100000, //        ####
   0b00000001, 0b10000000, //        ##              
 };
+
+void Hauptseite()
+{
+  char dummy[8];
+  String Antwort = "";
+  Antwort += "<meta http-equiv='refresh' content='5'/>";
+  Antwort += "<font face=";
+  Antwort += char(34);
+  Antwort += "Courier New";
+  Antwort += char(34);
+  Antwort += ">";
+   
+  Antwort += "<b>Aktuelle Temperatur: </b>\n</br>";
+  
+  dtostrf(Temp, 5, 1, dummy);  
+  Antwort += dummy;
+  Antwort += " ";
+  Antwort += char(176);
+  Antwort += "C\n</br>";
+
+  Antwort += "\n</br><b>Schaltstatus: </b>\n</br>Heizung:&nbsp;&nbsp;";
+  if (relais[1] == 'H') { Antwort +="Ein\n</br>"; } else { Antwort +="Aus\n</br>"; }
+  Antwort +="R"; Antwort +=char(252); Antwort +="hrwerk:&nbsp;";
+  if (relais[2] == 'R') { Antwort +="Ein\n</br>"; } else { Antwort +="Aus\n</br>"; }
+  Antwort += "Pumpe:&nbsp;&nbsp;&nbsp;&nbsp;";
+  if (relais[3] == 'P') { Antwort +="Ein\n</br>"; } else { Antwort +="Aus\n</br>"; }
+  Antwort += "Alarm:&nbsp;&nbsp;&nbsp;&nbsp;";
+  if (relais[4] == 'A') { Antwort +="Ein\n</br>"; } else { Antwort +="Aus\n</br>"; }
+  Antwort +="\n</br><b>Brauereistatus: </b>\n</br>";
+  if (state[1]=='o') { Antwort +="OFFLINE "; }        
+  else if (state[1]=='x') { Antwort +="INAKTIV"; }
+  else if (state[1]=='y') { Antwort +="AKTIV"; }
+  else if (state[1]=='z') { Antwort +="PAUSIERT"; }
+  Antwort +="\n</br>";      
+  Antwort +="</br>Verbunden mit: ";
+  Antwort +=WiFi.SSID(); 
+  Antwort +="</br>Signalstaerke: ";
+  Antwort +=WiFi.RSSI(); 
+  Antwort +="dBm  </br>";
+  Antwort +="</br>IP-Adresse: ";
+  IPAddress IP = WiFi.localIP();
+  Antwort += IP[0];
+  Antwort += ".";
+  Antwort += IP[1];
+  Antwort += ".";
+  Antwort += IP[2];
+  Antwort += ".";
+  Antwort += IP[3];
+  Antwort +="</br>";
+  Antwort +="</br>UDP-IN port: ";
+  Antwort +=localPort; 
+  Antwort +="</br>UDP-OUT port: ";
+  Antwort +=answerPort; 
+  Antwort +="</br></br>";
+  Antwort += "</font>";
+  server.send ( 300, "text/html", Antwort );
+}
+
+void packetAuswertung()
+{
+  int temp = 0;
+  int temp2 = 0;
+  if ((temprec[0]=='C') && (temprec[18]=='c'))             // Begin der Decodierung des seriellen Strings  
+  { 
+    temp=(int)temprec[1];
+    if ( temp < 0 ) { temp = 256 + temp; }
+    if ( temp > 7) {relais[4]='A';temp=temp-8;} else {relais[4]='a';} 
+    if ( temp > 3) {relais[3]='P';temp=temp-4;} else {relais[3]='p';} 
+    if ( temp > 1) {relais[2]='R';temp=temp-2;} else {relais[2]='r';}
+    if ( temp > 0) {relais[1]='H';temp=temp-1;} else {relais[1]='h';}   
+
+    temp=(int)temprec[2];
+    if ( temp < 0 ) { temp = 256 + temp; }
+    if ( temp > 127) {temp=temp-128;}  
+    if ( temp > 63) {temp=temp-64;}
+    if ( temp > 31) {temp=temp-32;}    
+    if ( temp > 15) {temp=temp-16;}  
+    if ( temp > 7) {temp=temp-8;}  
+    if ( temp > 3) {state[1]='x';temp=temp-4;} 
+    else if ( temp > 1) {state[1]='z';temp=temp-2;}  
+    else if ( temp > 0) {state[1]='y';temp=temp-1;}    
+
+    temp=(int)temprec[3];
+    if ( temp < 0 ) { temp = 256 + temp; }
+    solltemp=temp;
+  }
+  SerialOut();
+}
  
 void DisplayOut() {
   display.clearDisplay();
@@ -306,6 +394,19 @@ void UDPRead()
   }
 }    
 
+void SerialOut()
+{
+  Serial.print(" Reilaistatus: ");
+  Serial.print(digitalRead(Heizung)); 
+  Serial.print(digitalRead(Ruehrwerk));
+  Serial.print(digitalRead(Pumpe));
+  Serial.print(digitalRead(Summer));
+  Serial.print(" S: ");
+  Serial.print(solltemp);
+  Serial.print(" I: ");
+  Serial.print(Temp,1);
+}
+
 void OfflineCheck()
 {
   if (jetztMillis > letzteInMillis+10000) 
@@ -325,50 +426,6 @@ void RelaisOut()
   if (relais[2] == 'R') { digitalWrite(Ruehrwerk,!RLowActive); } else { digitalWrite(Ruehrwerk,RLowActive); }
   if (relais[3] == 'P') { digitalWrite(Pumpe,!PLowActive); } else { digitalWrite(Pumpe,PLowActive); }
   if (relais[4] == 'A') { digitalWrite(Summer,!ALowActive); } else { digitalWrite(Summer,ALowActive); }
-}
-
-void SerialOut()
-{
-  Serial.print(" Reilaistatus: ");
-  Serial.print(digitalRead(Heizung)); 
-  Serial.print(digitalRead(Ruehrwerk));
-  Serial.print(digitalRead(Pumpe));
-  Serial.print(digitalRead(Summer));
-  Serial.print(" S: ");
-  Serial.print(solltemp);
-  Serial.print(" I: ");
-  Serial.print(Temp,1);
-}
-
-void packetAuswertung()
-{
-  int temp = 0;
-  int temp2 = 0;
-  if ((temprec[0]=='C') && (temprec[18]=='c'))             // Begin der Decodierung des seriellen Strings  
-  { 
-    temp=(int)temprec[1];
-    if ( temp < 0 ) { temp = 256 + temp; }
-    if ( temp > 7) {relais[4]='A';temp=temp-8;} else {relais[4]='a';} 
-    if ( temp > 3) {relais[3]='P';temp=temp-4;} else {relais[3]='p';} 
-    if ( temp > 1) {relais[2]='R';temp=temp-2;} else {relais[2]='r';}
-    if ( temp > 0) {relais[1]='H';temp=temp-1;} else {relais[1]='h';}   
-
-    temp=(int)temprec[2];
-    if ( temp < 0 ) { temp = 256 + temp; }
-    if ( temp > 127) {temp=temp-128;}  
-    if ( temp > 63) {temp=temp-64;}
-    if ( temp > 31) {temp=temp-32;}    
-    if ( temp > 15) {temp=temp-16;}  
-    if ( temp > 7) {temp=temp-8;}  
-    if ( temp > 3) {state[1]='x';temp=temp-4;} 
-    else if ( temp > 1) {state[1]='z';temp=temp-2;}  
-    else if ( temp > 0) {state[1]='y';temp=temp-1;}    
-
-    temp=(int)temprec[3];
-    if ( temp < 0 ) { temp = 256 + temp; }
-    solltemp=temp;
-  }
-  SerialOut();
 }
 
 float DS18B20lesen()
@@ -590,62 +647,6 @@ void loop() {
   }  
 }
 
-void Hauptseite()
-{
-  char dummy[8];
-  String Antwort = "";
-  Antwort += "<meta http-equiv='refresh' content='5'/>";
-  Antwort += "<font face=";
-  Antwort += char(34);
-  Antwort += "Courier New";
-  Antwort += char(34);
-  Antwort += ">";
-   
-  Antwort += "<b>Aktuelle Temperatur: </b>\n</br>";
-  
-  dtostrf(Temp, 5, 1, dummy);  
-  Antwort += dummy;
-  Antwort += " ";
-  Antwort += char(176);
-  Antwort += "C\n</br>";
-
-  Antwort += "\n</br><b>Schaltstatus: </b>\n</br>Heizung:&nbsp;&nbsp;";
-  if (relais[1] == 'H') { Antwort +="Ein\n</br>"; } else { Antwort +="Aus\n</br>"; }
-  Antwort +="R"; Antwort +=char(252); Antwort +="hrwerk:&nbsp;";
-  if (relais[2] == 'R') { Antwort +="Ein\n</br>"; } else { Antwort +="Aus\n</br>"; }
-  Antwort += "Pumpe:&nbsp;&nbsp;&nbsp;&nbsp;";
-  if (relais[3] == 'P') { Antwort +="Ein\n</br>"; } else { Antwort +="Aus\n</br>"; }
-  Antwort += "Alarm:&nbsp;&nbsp;&nbsp;&nbsp;";
-  if (relais[4] == 'A') { Antwort +="Ein\n</br>"; } else { Antwort +="Aus\n</br>"; }
-  Antwort +="\n</br><b>Brauereistatus: </b>\n</br>";
-  if (state[1]=='o') { Antwort +="OFFLINE "; }        
-  else if (state[1]=='x') { Antwort +="INAKTIV"; }
-  else if (state[1]=='y') { Antwort +="AKTIV"; }
-  else if (state[1]=='z') { Antwort +="PAUSIERT"; }
-  Antwort +="\n</br>";      
-  Antwort +="</br>Verbunden mit: ";
-  Antwort +=WiFi.SSID(); 
-  Antwort +="</br>Signalstaerke: ";
-  Antwort +=WiFi.RSSI(); 
-  Antwort +="dBm  </br>";
-  Antwort +="</br>IP-Adresse: ";
-  IPAddress IP = WiFi.localIP();
-  Antwort += IP[0];
-  Antwort += ".";
-  Antwort += IP[1];
-  Antwort += ".";
-  Antwort += IP[2];
-  Antwort += ".";
-  Antwort += IP[3];
-  Antwort +="</br>";
-  Antwort +="</br>UDP-IN port: ";
-  Antwort +=localPort; 
-  Antwort +="</br>UDP-OUT port: ";
-  Antwort +=answerPort; 
-  Antwort +="</br></br>";
-  Antwort += "</font>";
-  server.send ( 300, "text/html", Antwort );
-}
 
    
  
