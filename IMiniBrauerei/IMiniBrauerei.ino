@@ -16,7 +16,7 @@
 #include <Adafruit_GFX.h>                            //https://github.com/adafruit/Adafruit-GFX-Library
 #include <Adafruit_SSD1306.h>                        //https://github.com/mcauser/Adafruit_SSD1306
 
-#define Version "1.0.1"
+#define Version "1.0.2"
 
 #define deltaMeldungMillis 5000                      // Sendeintervall an die Brauerei in Millisekunden
 #define DRD_TIMEOUT 10                               // Number of seconds after reset during which a subseqent reset will be considered a double reset.
@@ -363,7 +363,7 @@ void DisplayOut() {
     display.write(charVal[0]);
     display.write(charVal[1]);
     display.write(charVal[2]);
-    if (Temp<100) {display.write(charVal[3]);}
+    if (solltemp<100) {display.write(charVal[3]);}
     display.display();
   }
   else { displayMillis = jetztMillis; } 
@@ -373,6 +373,7 @@ void UDPOut() {
   dtostrf(Temp, 3, 1, charVal);
   Udp.beginPacket(UDPip, answerPort);
   Udp.write('T');
+  if (Temp<10) {Udp.write(' ');}
   Udp.write(charVal);
   Udp.write('t');
   Udp.println();
