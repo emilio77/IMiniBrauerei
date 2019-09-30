@@ -37,6 +37,7 @@ IMiniBrauerei gem. Schaltplan.jpg verdrahten ( in der Configuration können spä
 - Browser an dem verbunden Gerät öffnen.
 - Wenn die Config-Seite nicht automatisch öffnet im Browser die Adresse 192.168.4.1 eingeben
 - Auf Config clicken und die WLAN-Daten und die Ports einstellen - anschliessend "SAVE" drücken
+- Optional kann auch der Hot-Spot-Modus gewählt werden. Dann meldet sich der Wemos nicht am Heimnetzwerk an sondern spannt sein eigenes Netzwerk mit dem Namen und dem Passwort "IMiniBrauerei" auf.
 - Der WEMOS prüft jetzt, ob die Eingaben stimmen, verbindet sich mit dem angegebenen WLAN-Netzwerk.
 
 ## Verhalten:
